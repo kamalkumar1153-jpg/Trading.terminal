@@ -1,0 +1,1980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Terminal — Live</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0B0E14">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --panel:#11151D;
+    --line:#1E2430;
+    --amber:#E8A33D;
+    --teal:#3DD9B3;
+    --coral:#E8555B;
+    --text:#E7E9EE;
+    --muted:#7D8598;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding-bottom:40px;
+  }
+  .ticker-strip{
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    overflow:hidden;
+    white-space:nowrap;
+    padding:10px 0;
+  }
+  .ticker-track{
+    display:inline-block;
+    padding-left:100%;
+    animation:scroll 22s linear infinite;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+  }
+  .ticker-track span{margin-right:48px;}
+  @keyframes scroll{
+    0%{transform:translateX(0);}
+    100%{transform:translateX(-100%);}
+  }
+  header{
+    padding:20px 16px 8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:20px;
+    letter-spacing:0.3px;
+  }
+  h1 span{color:var(--amber);}
+  .status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    padding:4px 10px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+  .dot.live{background:var(--teal);box-shadow:0 0 6px var(--teal);}
+  .dot.down{background:var(--coral);}
+  main{padding:0 16px;}
+  .index-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin:16px 0;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px;
+  }
+  .card .label{
+    font-size:11px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin-bottom:6px;
+  }
+  .card .price{
+    font-family:'JetBrains Mono',monospace;
+    font-size:24px;
+    font-weight:700;
+  }
+  .card .chg{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    margin-top:4px;
+  }
+  .up{color:var(--teal);}
+  .down{color:var(--coral);}
+  section.panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    margin-top:16px;
+    overflow:hidden;
+  }
+  .panel-head{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .panel-head h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;
+    font-weight:500;
+  }
+  .panel-head select{
+    margin:0;
+    flex:none;
+  }
+  .chart-footer{
+    padding:6px 14px 12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--muted);
+    text-align:right;
+  }
+  #priceChart{width:100%;display:block;}
+  .momentum-badge{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:12px;
+    padding:4px 12px;
+    border-radius:8px;
+  }
+  .momentum-badge.up{background:rgba(61,217,179,0.15);color:var(--teal);}
+  .momentum-badge.down{background:rgba(232,85,91,0.15);color:var(--coral);}
+  .momentum-badge.quiet{background:rgba(125,133,152,0.15);color:var(--muted);}
+  .momentum-body{
+    padding:12px 14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    border-bottom:1px solid var(--line);
+  }
+  .sr-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .sr-cell{
+    padding:12px 14px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .sr-cell:first-child{border-right:1px solid var(--line);}
+  .sr-cell .sr-label{
+    font-size:10px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin-bottom:6px;
+  }
+  .sr-cell .sr-val{font-size:15px;font-weight:700;}
+  .sr-cell .sr-sub{font-size:10.5px;color:var(--muted);margin-top:2px;}
+  .watch-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .watch-row:last-child{border-bottom:none;}
+  .watch-row .watch-symbol{font-weight:700;font-size:13px;}
+  .watch-row .watch-price{font-size:15px;font-weight:700;margin-left:auto;margin-right:10px;}
+  .watch-row .watch-chg{font-size:11px;min-width:60px;text-align:right;}
+  .watch-row .watch-del{
+    background:none;
+    border:none;
+    color:var(--coral);
+    font-size:16px;
+    padding:0 0 0 8px;
+    cursor:pointer;
+  }
+  .controls{
+    display:flex;
+    gap:8px;
+    padding:10px 14px;
+  }
+  select,input{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    flex:1;
+  }
+  button{
+    background:var(--amber);
+    color:#151109;
+    border:none;
+    padding:8px 14px;
+    border-radius:6px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:12px;
+    cursor:pointer;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+  }
+  th{
+    text-align:right;
+    padding:8px 6px;
+    color:var(--muted);
+    font-weight:500;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  th:first-child,td:first-child{text-align:left;}
+  td{
+    text-align:right;
+    padding:7px 6px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  tr.atm{background:rgba(232,163,61,0.08);}
+  .ce{color:var(--teal);}
+  .pe{color:var(--coral);}
+  .buy-btn{
+    padding:4px 8px;
+    font-size:10px;
+    background:var(--teal);
+    color:#08211a;
+  }
+  .buy-btn.pe-buy{background:var(--coral);color:#2a0a0c;}
+  .bu-tag{
+    display:inline-block;
+    font-size:8px;
+    font-weight:700;
+    padding:1px 4px;
+    border-radius:3px;
+    margin-left:4px;
+    vertical-align:middle;
+  }
+  .bu-lb{background:rgba(61,217,179,0.25);color:var(--teal);}
+  .bu-sc{background:rgba(61,217,179,0.12);color:var(--teal);border:1px solid rgba(61,217,179,0.3);}
+  .bu-sb{background:rgba(232,85,91,0.25);color:var(--coral);}
+  .bu-lu{background:rgba(232,85,91,0.12);color:var(--coral);border:1px solid rgba(232,85,91,0.3);}
+  .buildup-legend{
+    padding:8px 14px;
+    font-size:9.5px;
+    color:var(--muted);
+    font-family:'JetBrains Mono',monospace;
+    border-bottom:1px solid var(--line);
+  }
+  .live-tag{
+    font-size:9px;
+    padding:1px 6px;
+    border-radius:4px;
+    background:rgba(232,163,61,0.15);
+    color:var(--amber);
+    margin-left:6px;
+  }
+  .close-btn{
+    padding:4px 10px;
+    font-size:10px;
+    background:var(--line);
+    color:var(--text);
+    margin-left:6px;
+  }
+  .empty{
+    padding:30px 14px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .pcr-strip{
+    display:flex;
+    justify-content:space-around;
+    padding:10px 14px;
+    border-top:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+  }
+  .pcr-strip div span{display:block;color:var(--muted);font-size:10px;margin-bottom:2px;}
+
+  .signal-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    margin-top:16px;
+    padding:16px;
+  }
+  .signal-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .signal-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;
+    color:var(--muted);
+  }
+  .signal-badge{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:18px;
+    padding:6px 16px;
+    border-radius:8px;
+  }
+  .signal-badge.bullish{background:rgba(61,217,179,0.15);color:var(--teal);}
+  .signal-badge.bearish{background:rgba(232,85,91,0.15);color:var(--coral);}
+  .signal-badge.neutral{background:rgba(232,163,61,0.12);color:var(--amber);}
+  .signal-reasons{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--text);
+    line-height:1.9;
+  }
+  .signal-reasons li{margin-left:16px;color:var(--muted);}
+  .signal-reasons li b{color:var(--text);}
+  .signal-disclaimer{
+    font-size:10.5px;
+    color:var(--muted);
+    margin-top:12px;
+    padding-top:10px;
+    border-top:1px solid var(--line);
+  }
+  .atr-block{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+  }
+  .atr-block .atr-title{
+    color:var(--amber);
+    font-weight:700;
+    margin-bottom:6px;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;
+  }
+  .atr-type-toggle{
+    display:flex;
+    gap:6px;
+    margin-bottom:8px;
+  }
+  .atr-type-toggle button{
+    padding:4px 12px;
+    font-size:10px;
+    background:var(--bg);
+    color:var(--muted);
+    border:1px solid var(--line);
+  }
+  .atr-type-toggle button.active{
+    background:var(--amber);
+    color:#151109;
+    border-color:var(--amber);
+  }
+  .atr-row{
+    display:flex;
+    justify-content:space-between;
+    padding:3px 0;
+    color:var(--muted);
+  }
+  .atr-row b{color:var(--text);}
+  .sizing-row{
+    display:flex;
+    gap:6px;
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+  }
+  .sizing-row input{flex:1;min-width:0;}
+  .sizing-row button{flex:none;}
+  .sizing-result{
+    margin-top:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--muted);
+  }
+  .sizing-result b{color:var(--teal);}
+  .tg-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-top:14px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+  }
+  .tg-toggle{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .tg-toggle input{width:auto;flex:none;}
+  .tg-status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    margin-top:8px;
+    color:var(--muted);
+  }
+  .tg-status.ok{color:var(--teal);}
+  .tg-status.err{color:var(--coral);}
+  .strike-filter{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    padding:0 14px 10px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .strike-filter select{flex:none;width:auto;}
+  .stock-search-row{
+    padding:10px 14px 0;
+    position:relative;
+  }
+  .stock-results{
+    position:absolute;
+    left:14px;
+    right:14px;
+    top:calc(100% - 4px);
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    z-index:10;
+    max-height:220px;
+    overflow-y:auto;
+    display:none;
+  }
+  .stock-results.show{display:block;}
+  .stock-result-item{
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .stock-result-item:last-child{border-bottom:none;}
+  .stock-result-item b{color:var(--amber);}
+  .stock-result-item span{display:block;font-size:10px;color:var(--muted);margin-top:2px;}
+  .journal-pnl{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:14px;
+  }
+  .stats-strip{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .stats-cell{
+    padding:10px 8px;
+    text-align:center;
+    border-right:1px solid var(--line);
+  }
+  .stats-cell:last-child{border-right:none;}
+  .stats-cell .stats-label{font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+  .stats-cell .stats-val{font-size:14px;font-weight:700;}
+  .loss-limit-row{
+    display:flex;
+    gap:6px;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    align-items:center;
+  }
+  .loss-limit-row input{flex:1;}
+  .loss-limit-row label{font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+  .loss-warning{
+    margin:0 14px 10px;
+    padding:10px;
+    background:rgba(232,85,91,0.12);
+    border:1px solid rgba(232,85,91,0.3);
+    border-radius:6px;
+    color:var(--coral);
+    font-size:11.5px;
+    font-family:'JetBrains Mono',monospace;
+    display:none;
+  }
+  .loss-warning.show{display:block;}
+  .trade-form{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .trade-form-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .trade-form-row input, .trade-form-row select{flex:1;}
+  .trade-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+  }
+  .trade-row .trade-main{flex:1;}
+  .trade-row .trade-meta{color:var(--muted);font-size:10.5px;margin-top:2px;}
+  .trade-row .trade-pnl{font-weight:700;margin:0 10px;}
+  .trade-row .trade-del{
+    background:none;
+    border:none;
+    color:var(--coral);
+    font-size:16px;
+    padding:0 4px;
+    cursor:pointer;
+  }
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:11px;
+    padding:24px 16px 0;
+    font-family:'JetBrains Mono',monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="ticker-strip">
+  <div class="ticker-track" id="tickerTrack">
+    <span>NIFTY 50 —</span><span>BANK NIFTY —</span><span>SENSEX —</span><span>NIFTY 50 —</span><span>BANK NIFTY —</span><span>SENSEX —</span>
+  </div>
+</div>
+
+<header>
+  <h1>Terminal<span>.</span></h1>
+  <div class="status" id="statusBadge"><div class="dot" id="statusDot"></div><span id="statusText">connecting</span></div>
+</header>
+
+<main>
+  <div class="index-row">
+    <div class="card">
+      <div class="label">Nifty 50</div>
+      <div class="price" id="niftyPrice">—</div>
+      <div class="chg" id="niftyChg">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Bank Nifty</div>
+      <div class="price" id="bankniftyPrice">—</div>
+      <div class="chg" id="bankniftyChg">—</div>
+    </div>
+  </div>
+  <div class="index-row">
+    <div class="card">
+      <div class="label">Sensex</div>
+      <div class="price" id="sensexPrice">—</div>
+      <div class="chg" id="sensexChg">—</div>
+    </div>
+    <div class="card">
+      <div class="label">India VIX</div>
+      <div class="price" id="vixPrice">—</div>
+      <div class="chg" id="vixChg">—</div>
+    </div>
+  </div>
+  <div class="index-row" style="grid-template-columns:1fr;">
+    <div class="card">
+      <div class="label">Bitcoin (₹)</div>
+      <div class="price" id="btcPrice">—</div>
+      <div class="chg" id="btcChg">—</div>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Watchlist</h2>
+      <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;">max 4</span>
+    </div>
+    <div class="stock-search-row" style="padding-bottom:10px;">
+      <input type="text" id="watchSearchInput" placeholder="Add stock to watchlist" oninput="searchWatchlist(this.value)">
+      <div id="watchResults" class="stock-results"></div>
+    </div>
+    <div id="watchlistBody"><div class="empty">No stocks in watchlist yet</div></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Live Chart</h2>
+      <select id="chartSymbol" onchange="resetChartHistory()" style="max-width:140px;">
+        <option value="NSE_INDEX|Nifty 50">NIFTY 50</option>
+        <option value="NSE_INDEX|Nifty Bank">BANK NIFTY</option>
+        <option value="BSE_INDEX|SENSEX">SENSEX</option>
+      </select>
+    </div>
+    <div style="padding:10px 14px 4px;">
+      <canvas id="priceChart" height="140"></canvas>
+    </div>
+    <div class="chart-footer" id="chartFooter">Collecting live ticks — chart fills in over the next few refreshes</div>
+  </section>
+
+  <section class="panel" id="momentumPanel" style="display:none;">
+    <div class="panel-head">
+      <h2>Momentum Alert</h2>
+      <span id="momentumBadge" class="momentum-badge"></span>
+    </div>
+    <div id="momentumBody" class="momentum-body"></div>
+    <div class="sr-grid" id="srGrid"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Option Chain</h2>
+      <button onclick="loadChain()">Refresh</button>
+    </div>
+    <div class="stock-search-row">
+      <input type="text" id="stockSearchInput" placeholder="Search stock F&O (e.g. RELIANCE)" oninput="searchStocks(this.value)">
+      <div id="stockResults" class="stock-results"></div>
+    </div>
+    <div class="controls">
+      <select id="symbolSelect" onchange="onSymbolChange()">
+        <option value="NSE_INDEX|Nifty 50">NIFTY 50</option>
+        <option value="NSE_INDEX|Nifty Bank">BANK NIFTY</option>
+        <option value="BSE_INDEX|SENSEX">SENSEX</option>
+      </select>
+      <input type="text" id="expiryInput" placeholder="Expiry YYYY-MM-DD">
+    </div>
+    <div class="strike-filter">
+      <span>Show strikes:</span>
+      <select id="strikeRange" onchange="renderChain(lastChainData)">
+        <option value="5">ATM ± 5</option>
+        <option value="10" selected>ATM ± 10</option>
+        <option value="9999">All</option>
+      </select>
+    </div>
+    <div id="chainWrap">
+      <div class="empty">Nearest expiry auto-filled — hit Refresh to load the chain</div>
+    </div>
+    <div class="pcr-strip" id="pcrStrip" style="display:none;">
+      <div><span>PCR (OI)</span><b id="pcrVal">—</b></div>
+      <div><span>Max Pain</span><b id="maxPainVal">—</b></div>
+      <div><span>Total CE OI</span><b id="ceOiVal">—</b></div>
+      <div><span>Total PE OI</span><b id="peOiVal">—</b></div>
+    </div>
+  </section>
+
+  <section class="signal-card">
+    <div class="signal-top">
+      <span class="signal-title">Bias Signal</span>
+      <span class="signal-badge neutral" id="signalBadge">—</span>
+    </div>
+    <div id="signalConfidence" style="display:none;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:8px;"></div>
+    <ul class="signal-reasons" id="signalReasons"><li>Load the option chain to generate a signal</li></ul>
+    <div id="atrTargets" class="atr-block" style="display:none;"></div>
+    <div id="atr15Targets" class="atr-block" style="display:none;"></div>
+    <div class="tg-toggle" style="padding:8px 0 0;">
+      <input type="checkbox" id="use15minSizing">
+      <span>Size using 15-min SL (for scalp trades) instead of daily</span>
+    </div>
+    <div class="sizing-row">
+      <input type="number" id="ps_capital" placeholder="Capital ₹" value="50000">
+      <input type="number" id="ps_risk" placeholder="Risk %" value="2" step="0.5">
+      <input type="number" id="ps_lotsize" placeholder="Lot size" value="75">
+      <button onclick="calcPositionSize()">Size It</button>
+    </div>
+    <div id="lotSizeNote" style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;padding-top:4px;"></div>
+    <div id="sizingResult" class="sizing-result"></div>
+    <div class="signal-disclaimer">Rule-based read of PCR, IV skew, OI buildup, Max Pain, VWAP, RSI, Volume &amp; ATR — a filter/helper, not a trade recommendation. Always confirm with chart &amp; price action. Verify lot size and premium before placing any real order.</div>
+    <div class="tg-row">
+      <label class="tg-toggle">
+        <input type="checkbox" id="autoAlert">
+        <span>Auto-alert on Telegram when bias changes</span>
+      </label>
+      <button onclick="sendSignalToTelegram(true)">Send Now</button>
+    </div>
+    <div class="tg-row" style="border-top:none;padding-top:0;margin-top:8px;">
+      <label class="tg-toggle">
+        <input type="checkbox" id="soundAlert">
+        <span>Sound / vibration alerts</span>
+      </label>
+    </div>
+    <div class="tg-status" id="tgStatus"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Trade Journal</h2>
+      <span id="journalPnl" class="journal-pnl">—</span>
+    </div>
+    <div class="stats-strip" id="statsStrip"></div>
+    <div class="loss-limit-row">
+      <label>Daily loss limit ₹</label>
+      <input type="number" id="dailyLossLimit" placeholder="e.g. 2000" value="2000">
+    </div>
+    <div class="loss-limit-row">
+      <label>Max open positions</label>
+      <input type="number" id="maxOpenPositions" placeholder="e.g. 3" value="3">
+    </div>
+    <div class="loss-warning" id="lossWarning"></div>
+    <form id="tradeForm" class="trade-form" onsubmit="return submitTrade(event)">
+      <div class="trade-form-row">
+        <input type="text" id="tf_symbol" placeholder="Symbol (e.g. NIFTY)" required>
+        <select id="tf_type">
+          <option value="CE">CE</option>
+          <option value="PE">PE</option>
+        </select>
+      </div>
+      <div class="trade-form-row">
+        <input type="number" id="tf_strike" placeholder="Strike" step="any">
+        <input type="number" id="tf_qty" placeholder="Qty (lot size)" required step="any">
+      </div>
+      <div class="trade-form-row">
+        <input type="number" id="tf_entry" placeholder="Entry price" required step="any">
+        <input type="number" id="tf_exit" placeholder="Exit price (blank = open)" step="any">
+      </div>
+      <button type="submit" style="width:100%;margin-top:4px;">Add Trade</button>
+    </form>
+    <div id="tradeList"><div class="empty">No trades logged yet</div></div>
+  </section>
+</main>
+
+<footer>Local server · http://127.0.0.1:5000 · Data via Upstox API</footer>
+
+<script>
+const BASE = "http://127.0.0.1:5000";
+let lastChainData = null;
+let lastSignal = null;
+let lastAtmData = null;
+let lastAtrTargets = null;
+let lastAtr15Targets = null;
+let manualAtrType = null;
+let lastVixChangePct = null;
+let pendingDirection = 'NEUTRAL';
+let lastIndicators = null;
+let lastWalls = null;
+let oiBaseline = null;
+let lastBuildup = null;
+let dayRange = {};
+let lastMomentumState = 'quiet';
+let lastSentLabel = null;
+let liveSpots = {};
+let priceHistory = {};
+let lastLotSizeName = null;
+let dailyLimitAlertSent = false;
+let lastAlertDate = new Date().toISOString().slice(0,10);
+let watchlist = [];
+let lastOpenTradesCount = 0;
+let squareOffAlertSent = false;
+const MAX_POINTS = 60;
+
+function fmt(n){ return n === null || n === undefined ? "—" : Number(n).toLocaleString('en-IN', {maximumFractionDigits:2}); }
+
+function displayLabel(label){ return label === 'NEUTRAL' ? 'WAIT' : label; }
+
+function formatTradeTime(iso){
+  try{
+    const d = new Date(iso);
+    const datePart = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    const timePart = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return `${datePart}, ${timePart}`;
+  }catch(e){ return ''; }
+}
+
+function playAlertSound(){
+  if(!document.getElementById('soundAlert').checked) return;
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  }catch(e){ }
+  if(navigator.vibrate) navigator.vibrate([120, 60, 120]);
+}
+
+function resetChartHistory(){
+  priceHistory = {};
+  drawChart();
+}
+
+function pushPrice(symbol, price){
+  if(!priceHistory[symbol]) priceHistory[symbol] = [];
+  priceHistory[symbol].push({ t: Date.now(), price });
+  if(priceHistory[symbol].length > MAX_POINTS) priceHistory[symbol].shift();
+}
+
+function drawChart(){
+  const canvas = document.getElementById('priceChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.clientWidth || 320;
+  const cssHeight = 140;
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+  const symbol = document.getElementById('chartSymbol').value;
+  const points = priceHistory[symbol] || [];
+  const footer = document.getElementById('chartFooter');
+
+  if(points.length < 2){
+    footer.textContent = 'Collecting live ticks — chart fills in over the next few refreshes';
+    return;
+  }
+
+  const prices = points.map(p => p.price);
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const pad = (max - min) * 0.1 || 1;
+  const yMin = min - pad, yMax = max + pad;
+  const first = prices[0], last = prices[prices.length - 1];
+  const up = last >= first;
+  const color = up ? '#3DD9B3' : '#E8555B';
+
+  const stepX = cssWidth / (MAX_POINTS - 1);
+  const startIdx = MAX_POINTS - points.length;
+
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    const x = (startIdx + i) * stepX;
+    const y = cssHeight - ((p.price - yMin) / (yMax - yMin)) * cssHeight;
+    if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const lastX = (startIdx + points.length - 1) * stepX;
+  ctx.lineTo(lastX, cssHeight);
+  ctx.lineTo(startIdx * stepX, cssHeight);
+  ctx.closePath();
+  ctx.fillStyle = up ? 'rgba(61,217,179,0.08)' : 'rgba(232,85,91,0.08)';
+  ctx.fill();
+
+  footer.innerHTML = `${points.length}/${MAX_POINTS} ticks · <span style="color:${color}">${fmt(last)}</span>`;
+}
+
+function nearestExpiry(){
+  const d = new Date();
+  const day = d.getDay();
+  let diff = (2 - day + 7) % 7;
+  d.setDate(d.getDate() + diff);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function lastThursdayOfMonth(){
+  const now = new Date();
+  let d = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  while(d.getDay() !== 4){ d.setDate(d.getDate()-1); }
+  return d.toISOString().slice(0,10);
+}
+
+async function fetchLotSize(name){
+  if(!name || name === lastLotSizeName) return;
+  const note = document.getElementById('lotSizeNote');
+  try{
+    const res = await fetch(`${BASE}/lot-size?name=${encodeURIComponent(name)}`);
+    const json = await res.json();
+    if(json.lot_size){
+      document.getElementById('ps_lotsize').value = json.lot_size;
+      note.textContent = `Lot size auto-filled for ${name} (${json.lot_size}) — verify before trading`;
+      lastLotSizeName = name;
+    }else{
+      note.textContent = `Could not auto-detect lot size for ${name} — enter manually`;
+    }
+  }catch(e){
+    note.textContent = '';
+  }
+}
+
+function onSymbolChange(){
+  document.getElementById('expiryInput').value = nearestExpiry();
+  const sel = document.getElementById('symbolSelect');
+  const label = sel.selectedOptions[0].textContent;
+  const lookupName = label === 'NIFTY 50' ? 'NIFTY' : label === 'BANK NIFTY' ? 'BANKNIFTY' : label === 'SENSEX' ? 'SENSEX' : label;
+  fetchLotSize(lookupName);
+}
+
+let stockSearchTimer = null;
+async function searchStocks(q){
+  clearTimeout(stockSearchTimer);
+  const resultsEl = document.getElementById('stockResults');
+  if(q.trim().length < 2){ resultsEl.classList.remove('show'); return; }
+  stockSearchTimer = setTimeout(async () => {
+    try{
+      const res = await fetch(`${BASE}/stock-search?q=${encodeURIComponent(q)}`);
+      const list = await res.json();
+      if(!Array.isArray(list) || !list.length){
+        resultsEl.innerHTML = '<div class="stock-result-item" style="color:var(--muted);">No matches</div>';
+        resultsEl.classList.add('show');
+        return;
+      }
+      resultsEl.innerHTML = list.map(s =>
+        `<div class="stock-result-item" onclick='selectStock(${JSON.stringify(s.symbol)}, ${JSON.stringify(s.name)}, ${JSON.stringify(s.instrument_key)})'>
+          <b>${s.symbol}</b><span>${s.name || ''}</span>
+        </div>`
+      ).join('');
+      resultsEl.classList.add('show');
+    }catch(e){
+      resultsEl.innerHTML = '<div class="stock-result-item" style="color:var(--coral);">Search failed — server offline?</div>';
+      resultsEl.classList.add('show');
+    }
+  }, 350);
+}
+
+function selectStock(symbol, name, instrumentKey){
+  const select = document.getElementById('symbolSelect');
+  const chartSelect = document.getElementById('chartSymbol');
+  [select, chartSelect].forEach(sel => {
+    const existing = sel.querySelector('option[data-custom="1"]');
+    if(existing) existing.remove();
+    const opt = document.createElement('option');
+    opt.value = instrumentKey;
+    opt.textContent = symbol;
+    opt.setAttribute('data-custom', '1');
+    sel.appendChild(opt);
+    sel.value = instrumentKey;
+  });
+  document.getElementById('stockSearchInput').value = symbol;
+  document.getElementById('stockResults').classList.remove('show');
+  document.getElementById('expiryInput').value = lastThursdayOfMonth();
+  fetchLotSize(name || symbol);
+  loadChain();
+}
+
+function setStatus(ok, msg){
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.className = 'dot ' + (ok ? 'live' : 'down');
+  text.textContent = msg;
+}
+
+async function loadQuote(symbol, priceId, chgId){
+  try{
+    const res = await fetch(`${BASE}/quote?symbol=${encodeURIComponent(symbol)}`);
+    const json = await res.json();
+    if(json.status !== 'success'){
+      if(priceId) setStatus(false, json.errors ? json.errors[0].message.slice(0,30) : 'error');
+      return null;
+    }
+    const data = Object.values(json.data)[0];
+    if(priceId){
+      document.getElementById(priceId).textContent = fmt(data.last_price);
+      const chg = data.net_change;
+      const pct = data.ohlc && data.ohlc.close ? (chg / data.ohlc.close * 100).toFixed(2) : '';
+      const chgEl = document.getElementById(chgId);
+      chgEl.textContent = (chg >= 0 ? '+' : '') + fmt(chg) + (pct ? ` (${pct}%)` : '');
+      chgEl.className = 'chg ' + (chg >= 0 ? 'up' : 'down');
+      setStatus(true, 'live');
+    }
+    liveSpots[symbol] = data.last_price;
+    pushPrice(symbol, data.last_price);
+    if(data.ohlc){
+      dayRange[symbol] = { open: data.ohlc.open, high: data.ohlc.high, low: data.ohlc.low };
+    }
+    return data;
+  }catch(e){
+    if(priceId) setStatus(false, 'server offline');
+    return null;
+  }
+}
+
+async function refreshTicker(){
+  const nifty = await loadQuote('NSE_INDEX|Nifty 50', 'niftyPrice', 'niftyChg');
+  const bn = await loadQuote('NSE_INDEX|Nifty Bank', 'bankniftyPrice', 'bankniftyChg');
+  const sensex = await loadQuote('BSE_INDEX|SENSEX', 'sensexPrice', 'sensexChg');
+  const vix = await loadQuote('NSE_INDEX|India VIX', 'vixPrice', 'vixChg');
+  if(vix && vix.ohlc && vix.ohlc.close){
+    lastVixChangePct = (vix.net_change / vix.ohlc.close) * 100;
+  }
+  const parts = [];
+  if(nifty) parts.push(`NIFTY 50 — ${fmt(nifty.last_price)}`);
+  if(bn) parts.push(`BANK NIFTY — ${fmt(bn.last_price)}`);
+  if(sensex) parts.push(`SENSEX — ${fmt(sensex.last_price)}`);
+  if(vix) parts.push(`INDIA VIX — ${fmt(vix.last_price)}`);
+  if(parts.length){
+    const track = document.getElementById('tickerTrack');
+    track.innerHTML = parts.concat(parts).map(p => `<span>${p}</span>`).join('');
+  }
+  const activeSymbol = document.getElementById('symbolSelect').value;
+  const fixedSymbols = ['NSE_INDEX|Nifty 50', 'NSE_INDEX|Nifty Bank', 'BSE_INDEX|SENSEX', 'NSE_INDEX|India VIX'];
+  if(!fixedSymbols.includes(activeSymbol)){
+    await loadQuote(activeSymbol, null, null);
+  }
+  drawChart();
+  checkMomentum();
+  refreshWatchlistPrices();
+  checkSquareOffTime();
+}
+
+function safeId(key){ return 'wl_' + key.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+async function loadWatchlist(){
+  try{
+    const res = await fetch(`${BASE}/watchlist`);
+    watchlist = await res.json();
+    renderWatchlist();
+    refreshWatchlistPrices();
+  }catch(e){ }
+}
+
+function renderWatchlist(){
+  const body = document.getElementById('watchlistBody');
+  if(!watchlist.length){
+    body.innerHTML = '<div class="empty">No stocks in watchlist yet</div>';
+    return;
+  }
+  body.innerHTML = watchlist.map(item => `
+    <div class="watch-row">
+      <span class="watch-symbol">${item.symbol}</span>
+      <span class="watch-price" id="${safeId(item.instrument_key)}_price">—</span>
+      <span class="watch-chg" id="${safeId(item.instrument_key)}_chg">—</span>
+      <button class="watch-del" onclick="removeFromWatchlist('${item.instrument_key}')">✕</button>
+    </div>
+  `).join('');
+}
+
+async function refreshWatchlistPrices(){
+  for(const item of watchlist){
+    try{
+      const res = await fetch(`${BASE}/quote?symbol=${encodeURIComponent(item.instrument_key)}`);
+      const json = await res.json();
+      if(json.status !== 'success') continue;
+      const data = Object.values(json.data)[0];
+      const priceEl = document.getElementById(`${safeId(item.instrument_key)}_price`);
+      const chgEl = document.getElementById(`${safeId(item.instrument_key)}_chg`);
+      if(priceEl) priceEl.textContent = fmt(data.last_price);
+      if(chgEl){
+        const chg = data.net_change;
+        const pct = data.ohlc && data.ohlc.close ? (chg / data.ohlc.close * 100).toFixed(2) : '';
+        chgEl.textContent = (chg >= 0 ? '+' : '') + fmt(chg) + (pct ? ` (${pct}%)` : '');
+        chgEl.className = 'watch-chg ' + (chg >= 0 ? 'up' : 'down');
+      }
+    }catch(e){ }
+  }
+}
+
+let watchSearchTimer = null;
+async function searchWatchlist(q){
+  clearTimeout(watchSearchTimer);
+  const resultsEl = document.getElementById('watchResults');
+  if(q.trim().length < 2){ resultsEl.classList.remove('show'); return; }
+  watchSearchTimer = setTimeout(async () => {
+    try{
+      const res = await fetch(`${BASE}/stock-search?q=${encodeURIComponent(q)}`);
+      const list = await res.json();
+      if(!Array.isArray(list) || !list.length){
+        resultsEl.innerHTML = '<div class="stock-result-item" style="color:var(--muted);">No matches</div>';
+        resultsEl.classList.add('show');
+        return;
+      }
+      resultsEl.innerHTML = list.map(s =>
+        `<div class="stock-result-item" onclick='addToWatchlist(${JSON.stringify(s.symbol)}, ${JSON.stringify(s.instrument_key)})'>
+          <b>${s.symbol}</b><span>${s.name || ''}</span>
+        </div>`
+      ).join('');
+      resultsEl.classList.add('show');
+    }catch(e){
+      resultsEl.innerHTML = '<div class="stock-result-item" style="color:var(--coral);">Search failed</div>';
+      resultsEl.classList.add('show');
+    }
+  }, 350);
+}
+
+async function addToWatchlist(symbol, instrumentKey){
+  if(watchlist.length >= 4){ alert('Watchlist is full (max 4). Remove one to add another.'); return; }
+  document.getElementById('watchSearchInput').value = '';
+  document.getElementById('watchResults').classList.remove('show');
+  try{
+    await fetch(`${BASE}/watchlist`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ symbol, instrument_key: instrumentKey })
+    });
+    loadWatchlist();
+  }catch(e){
+    alert('Could not reach local server');
+  }
+}
+
+async function removeFromWatchlist(instrumentKey){
+  try{
+    await fetch(`${BASE}/watchlist/${encodeURIComponent(instrumentKey)}`, { method: 'DELETE' });
+    loadWatchlist();
+  }catch(e){ }
+}
+
+function checkSquareOffTime(){
+  const now = new Date();
+  const today = now.toISOString().slice(0,10);
+  if(today !== lastAlertDate){ squareOffAlertSent = false; }
+  const hour = now.getHours(), min = now.getMinutes();
+  if(hour === 15 && min >= 15 && min <= 20 && !squareOffAlertSent){
+    squareOffAlertSent = true;
+    playAlertSound();
+    fetch(`${BASE}/send-signal`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: `⏰ <b>Square-off reminder</b>\nMarket closes soon — review your open positions in the Trade Journal.` })
+    }).catch(()=>{});
+  }
+}
+
+async function fetchBtcQuote(){
+  try{
+    const res = await fetch(`${BASE}/crypto-quote`);
+    const json = await res.json();
+    if(json.status !== 'success' || json.price_inr === null || json.price_inr === undefined) return;
+    document.getElementById('btcPrice').textContent = '₹' + fmt(json.price_inr);
+    const chgEl = document.getElementById('btcChg');
+    const pct = json.change_24h_pct;
+    if(pct !== null && pct !== undefined){
+      chgEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '% (24h)';
+      chgEl.className = 'chg ' + (pct >= 0 ? 'up' : 'down');
+    }
+  }catch(e){ }
+}
+
+function checkMomentum(){
+  const symbol = document.getElementById('symbolSelect').value;
+  const panel = document.getElementById('momentumPanel');
+  const points = priceHistory[symbol] || [];
+  const range = dayRange[symbol];
+
+  if(points.length < 6 || !range){ panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+
+  const window = points.slice(-12);
+  const shortChangePct = ((window[window.length-1].price - window[0].price) / window[0].price) * 100;
+  const price = window[window.length-1].price;
+
+  let state = 'quiet', label = 'No strong move';
+  if(shortChangePct > 0.15){ state = 'up'; label = `🚀 Strong up move — +${shortChangePct.toFixed(2)}% in last ~1 min`; }
+  else if(shortChangePct < -0.15){ state = 'down'; label = `🔻 Strong down move — ${shortChangePct.toFixed(2)}% in last ~1 min`; }
+
+  const badge = document.getElementById('momentumBadge');
+  badge.textContent = state === 'up' ? 'BULLISH MOVE' : state === 'down' ? 'BEARISH MOVE' : 'QUIET';
+  badge.className = 'momentum-badge ' + state;
+  document.getElementById('momentumBody').textContent = label;
+
+  const resistanceOi = lastWalls ? fmt(lastWalls.resistance) : '—';
+  const supportOi = lastWalls ? fmt(lastWalls.support) : '—';
+  document.getElementById('srGrid').innerHTML = `
+    <div class="sr-cell">
+      <div class="sr-label" style="color:var(--coral)">Resistance</div>
+      <div class="sr-val">${fmt(range.high)}</div>
+      <div class="sr-sub">Day high · OI wall: ${resistanceOi}</div>
+    </div>
+    <div class="sr-cell">
+      <div class="sr-label" style="color:var(--teal)">Support</div>
+      <div class="sr-val">${fmt(range.low)}</div>
+      <div class="sr-sub">Day low · OI wall: ${supportOi}</div>
+    </div>
+  `;
+
+  if(state !== 'quiet' && state !== lastMomentumState){
+    playAlertSound();
+    if(document.getElementById('autoAlert').checked){
+      sendMomentumAlert(state, price, shortChangePct);
+    }
+  }
+  lastMomentumState = state;
+}
+
+async function sendMomentumAlert(state, price, changePct){
+  const symbol = document.getElementById('symbolSelect').selectedOptions[0].textContent;
+  const emoji = state === 'up' ? '🚀' : '🔻';
+  const msg = `${emoji} <b>${symbol} — Strong ${state === 'up' ? 'Bullish' : 'Bearish'} Move</b>\nPrice: ${fmt(price)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}% in ~1 min)`;
+  try{
+    await fetch(`${BASE}/send-signal`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg })
+    });
+  }catch(e){ }
+}
+
+async function loadChain(){
+  const symbol = document.getElementById('symbolSelect').value;
+  const expiry = document.getElementById('expiryInput').value.trim();
+  const wrap = document.getElementById('chainWrap');
+  if(!expiry){
+    wrap.innerHTML = '<div class="empty">Enter an expiry date (YYYY-MM-DD) first</div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="empty">Loading chain…</div>';
+  try{
+    const res = await fetch(`${BASE}/optionchain?symbol=${encodeURIComponent(symbol)}&expiry=${expiry}`);
+    const json = await res.json();
+    if(json.status !== 'success' || !json.data || !json.data.length){
+      wrap.innerHTML = `<div class="empty">${json.errors ? json.errors[0].message : 'No data for this expiry'}</div>`;
+      document.getElementById('pcrStrip').style.display = 'none';
+      return;
+    }
+    renderChain(json.data);
+  }catch(e){
+    wrap.innerHTML = '<div class="empty">Could not reach local server</div>';
+  }
+}
+
+function calcMaxPain(rows){
+  let bestStrike = null, bestPain = Infinity;
+  rows.forEach(candidate => {
+    const settlePrice = candidate.strike_price;
+    let pain = 0;
+    rows.forEach(r => {
+      const ceOi = (r.call_options && r.call_options.market_data.oi) || 0;
+      const peOi = (r.put_options && r.put_options.market_data.oi) || 0;
+      if(settlePrice > r.strike_price) pain += ceOi * (settlePrice - r.strike_price);
+      if(settlePrice < r.strike_price) pain += peOi * (r.strike_price - settlePrice);
+    });
+    if(pain < bestPain){ bestPain = pain; bestStrike = settlePrice; }
+  });
+  return bestStrike;
+}
+
+async function ensureOiBaseline(symbol, rows){
+  const today = new Date().toISOString().slice(0,10);
+  if(oiBaseline && oiBaseline.date === today && oiBaseline.symbol === symbol) return;
+
+  try{
+    const res = await fetch(`${BASE}/oi-baseline?symbol=${encodeURIComponent(symbol)}`);
+    const json = await res.json();
+    if(json && json.date === today && json.symbol === symbol){
+      oiBaseline = json;
+      return;
+    }
+  }catch(e){ }
+
+  const strikes = {};
+  rows.forEach(r => {
+    const ce = r.call_options ? r.call_options.market_data : {};
+    const pe = r.put_options ? r.put_options.market_data : {};
+    strikes[`${r.strike_price}_CE`] = { oi: ce.oi || 0, ltp: ce.ltp || 0 };
+    strikes[`${r.strike_price}_PE`] = { oi: pe.oi || 0, ltp: pe.ltp || 0 };
+  });
+  oiBaseline = { date: today, symbol, strikes };
+  try{
+    await fetch(`${BASE}/oi-baseline?symbol=${encodeURIComponent(symbol)}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(oiBaseline)
+    });
+  }catch(e){ }
+}
+
+function getBuildupTag(strike, type, curOi, curLtp){
+  if(!oiBaseline) return null;
+  const base = oiBaseline.strikes[`${strike}_${type}`];
+  if(!base || !base.oi) return null;
+  const oiChangePct = ((curOi - base.oi) / base.oi) * 100;
+  const ltpChangePct = base.ltp ? ((curLtp - base.ltp) / base.ltp) * 100 : 0;
+  const oiUp = oiChangePct > 3, oiDown = oiChangePct < -3;
+  if(!oiUp && !oiDown) return null;
+  const priceUp = ltpChangePct > 0.5, priceDown = ltpChangePct < -0.5;
+  if(oiUp && priceUp) return { label: 'LB', cls: 'bu-lb' };
+  if(oiUp && priceDown) return { label: 'SB', cls: 'bu-sb' };
+  if(oiDown && priceUp) return { label: 'SC', cls: 'bu-sc' };
+  if(oiDown && priceDown) return { label: 'LU', cls: 'bu-lu' };
+  return null;
+}
+
+async function fetchIndicators(symbol){
+  try{
+    const res = await fetch(`${BASE}/indicators?symbol=${encodeURIComponent(symbol)}`);
+    const json = await res.json();
+    lastIndicators = json.status === 'success' ? json : null;
+  }catch(e){
+    lastIndicators = null;
+  }
+}
+
+async function renderChain(rows){
+  if(!rows) return;
+  lastChainData = rows;
+  const symbol = document.getElementById('symbolSelect').value;
+  let spot = rows[0].underlying_spot_price;
+  if(!spot){ spot = liveSpots[symbol] || 0; }
+  let totalCeOi = 0, totalPeOi = 0;
+  let closestDiff = Infinity, atmStrike = null;
+
+  rows.forEach(r => {
+    totalCeOi += (r.call_options && r.call_options.market_data.oi) || 0;
+    totalPeOi += (r.put_options && r.put_options.market_data.oi) || 0;
+    const diff = Math.abs(r.strike_price - spot);
+    if(diff < closestDiff){ closestDiff = diff; atmStrike = r.strike_price; }
+  });
+
+  const pcr = totalPeOi && totalCeOi ? (totalPeOi / totalCeOi) : null;
+  const maxPain = calcMaxPain(rows);
+
+  await ensureOiBaseline(symbol, rows);
+  await fetchIndicators(symbol);
+
+  const rangeVal = parseInt(document.getElementById('strikeRange').value, 10);
+  const sorted = [...rows].sort((a,b) => a.strike_price - b.strike_price);
+  const atmIdx = sorted.findIndex(r => r.strike_price === atmStrike);
+  const start = Math.max(0, atmIdx - rangeVal);
+  const end = Math.min(sorted.length, atmIdx + rangeVal + 1);
+  const visible = sorted.slice(start, end);
+
+  let html = `<div class="buildup-legend">LB Long Buildup · SB Short Buildup · SC Short Covering · LU Long Unwinding</div><div style="overflow-x:auto;"><table>
+    <tr>
+      <th></th><th>CE OI</th><th>CE LTP</th>
+      <th>Strike</th>
+      <th>PE LTP</th><th>PE OI</th><th></th>
+    </tr>`;
+
+  let atmCeIv = null, atmPeIv = null, atmCeDelta = null, atmPeDelta = null, atmCeLtp = null, atmPeLtp = null;
+  const symbolLabel = document.getElementById('symbolSelect').selectedOptions[0].textContent;
+  let ceBullish = 0, ceBearish = 0, peBullish = 0, peBearish = 0;
+
+  visible.forEach(r => {
+    const ce = r.call_options ? r.call_options.market_data : {};
+    const pe = r.put_options ? r.put_options.market_data : {};
+    const ceG = r.call_options ? r.call_options.option_greeks : {};
+    const peG = r.put_options ? r.put_options.option_greeks : {};
+    const ceKey = r.call_options ? r.call_options.instrument_key : null;
+    const peKey = r.put_options ? r.put_options.instrument_key : null;
+    const isAtm = r.strike_price === atmStrike;
+    if(isAtm){
+      atmCeIv = ceG.iv; atmPeIv = peG.iv;
+      atmCeDelta = ceG.delta; atmPeDelta = peG.delta;
+      atmCeLtp = ce.ltp; atmPeLtp = pe.ltp;
+    }
+    const ceTag = getBuildupTag(r.strike_price, 'CE', ce.oi || 0, ce.ltp || 0);
+    const peTag = getBuildupTag(r.strike_price, 'PE', pe.oi || 0, pe.ltp || 0);
+    if(ceTag){
+      if(ceTag.label === 'LB') ceBullish++;
+      if(ceTag.label === 'SB') ceBearish++;
+    }
+    if(peTag){
+      if(peTag.label === 'LB') peBearish++;
+      if(peTag.label === 'SB') peBullish++;
+    }
+    const ceTagHtml = ceTag ? `<span class="bu-tag ${ceTag.cls}">${ceTag.label}</span>` : '';
+    const peTagHtml = peTag ? `<span class="bu-tag ${peTag.cls}">${peTag.label}</span>` : '';
+    html += `<tr class="${isAtm ? 'atm' : ''}">
+      <td>${ceKey ? `<button class="buy-btn" onclick="buyOption('${ceKey}','${symbolLabel}',${r.strike_price},'CE',${ce.ltp||0})">BUY</button>` : ''}</td>
+      <td class="ce">${fmt(ce.oi)}${ceTagHtml}</td>
+      <td class="ce">${fmt(ce.ltp)}</td>
+      <td><b>${fmt(r.strike_price)}</b></td>
+      <td class="pe">${fmt(pe.ltp)}</td>
+      <td class="pe">${peTagHtml}${fmt(pe.oi)}</td>
+      <td>${peKey ? `<button class="buy-btn pe-buy" onclick="buyOption('${peKey}','${symbolLabel}',${r.strike_price},'PE',${pe.ltp||0})">BUY</button>` : ''}</td>
+    </tr>`;
+  });
+  html += '</table></div>';
+  document.getElementById('chainWrap').innerHTML = html;
+
+  document.getElementById('pcrStrip').style.display = 'flex';
+  document.getElementById('pcrVal').textContent = pcr ? pcr.toFixed(2) : '—';
+  document.getElementById('maxPainVal').textContent = fmt(maxPain);
+  document.getElementById('ceOiVal').textContent = fmt(totalCeOi);
+  document.getElementById('peOiVal').textContent = fmt(totalPeOi);
+
+  lastBuildup = { bullish: ceBullish + peBullish, bearish: ceBearish + peBearish };
+
+  generateSignal({ rows, spot, atmStrike, pcr, maxPain, totalCeOi, totalPeOi, atmCeIv, atmPeIv, atmCeDelta, atmPeDelta, atmCeLtp, atmPeLtp, buildup: lastBuildup });
+  lastAtmData = { atmCeDelta, atmPeDelta, atmCeLtp, atmPeLtp };
+  fetchAtrAndRender(symbol);
+  fetchAtr15AndRender(symbol);
+}
+
+function generateSignal(ctx){
+  const { spot, atmStrike, pcr, maxPain, atmCeIv, atmPeIv, rows, buildup } = ctx;
+  let score = 0;
+  let bullishFactors = 0, bearishFactors = 0;
+  const reasons = [];
+
+  let momentumDir = null, buildupDir = null;
+
+  if(buildup && (buildup.bullish > 0 || buildup.bearish > 0)){
+    if(buildup.bullish > buildup.bearish){
+      score += 1; bullishFactors++; buildupDir = 'up';
+      reasons.push(`OI buildup (vs today's open) leans bullish — <b>${buildup.bullish}</b> bullish signals vs <b>${buildup.bearish}</b> bearish`);
+    }else if(buildup.bearish > buildup.bullish){
+      score -= 1; bearishFactors++; buildupDir = 'down';
+      reasons.push(`OI buildup (vs today's open) leans bearish — <b>${buildup.bearish}</b> bearish signals vs <b>${buildup.bullish}</b> bullish`);
+    }else{
+      reasons.push(`OI buildup mixed — <b>${buildup.bullish}</b> bullish vs <b>${buildup.bearish}</b> bearish signals`);
+    }
+  }
+
+  if(pcr !== null){
+    if(pcr > 1.3){ score += 1; bullishFactors++; reasons.push(`PCR is <b>${pcr.toFixed(2)}</b> (&gt;1.3) — heavy Put writing, often a bullish tell`); }
+    else if(pcr < 0.7){ score -= 1; bearishFactors++; reasons.push(`PCR is <b>${pcr.toFixed(2)}</b> (&lt;0.7) — heavy Call writing, often a bearish tell`); }
+    else{ reasons.push(`PCR is <b>${pcr.toFixed(2)}</b> — no strong lean either side`); }
+  }
+
+  if(maxPain){
+    const gap = spot - maxPain;
+    const gapPct = (gap / spot) * 100;
+    if(gapPct > 0.3){ score -= 1; bearishFactors++; reasons.push(`Spot is <b>${gapPct.toFixed(2)}%</b> above Max Pain (${fmt(maxPain)}) — mild downward pull toward expiry`); }
+    else if(gapPct < -0.3){ score += 1; bullishFactors++; reasons.push(`Spot is <b>${Math.abs(gapPct).toFixed(2)}%</b> below Max Pain (${fmt(maxPain)}) — mild upward pull toward expiry`); }
+    else{ reasons.push(`Spot is close to Max Pain (${fmt(maxPain)}) — low expiry-pull bias`); }
+  }
+
+  if(atmCeIv && atmPeIv){
+    const skew = atmPeIv - atmCeIv;
+    if(skew > 2){ score -= 0.5; bearishFactors++; reasons.push(`ATM Put IV is richer than Call IV by <b>${skew.toFixed(1)}</b> pts — more hedging/fear on the downside`); }
+    else if(skew < -2){ score += 0.5; bullishFactors++; reasons.push(`ATM Call IV is richer than Put IV by <b>${Math.abs(skew).toFixed(1)}</b> pts — more speculative buying on the upside`); }
+  }
+
+  if(lastMomentumState === 'up'){ score += 0.75; bullishFactors++; momentumDir = 'up'; reasons.push(`Live momentum is bullish (price up ~1 min trend)`); }
+  else if(lastMomentumState === 'down'){ score -= 0.75; bearishFactors++; momentumDir = 'down'; reasons.push(`Live momentum is bearish (price down ~1 min trend)`); }
+
+  if(lastVixChangePct !== null){
+    if(lastVixChangePct < -3){ score += 0.5; bullishFactors++; reasons.push(`India VIX down <b>${Math.abs(lastVixChangePct).toFixed(1)}%</b> — falling fear, supportive for upside`); }
+    else if(lastVixChangePct > 5){ score -= 0.5; bearishFactors++; reasons.push(`India VIX up <b>${lastVixChangePct.toFixed(1)}%</b> — rising volatility/fear, favors caution or downside`); }
+  }
+
+  if(lastIndicators){
+    const { vwap, rsi, volume_ratio, last_price } = lastIndicators;
+
+    if(vwap && last_price){
+      const vwapGapPct = ((last_price - vwap) / vwap) * 100;
+      if(vwapGapPct > 0.05){ score += 1; bullishFactors++; reasons.push(`Price is <b>${vwapGapPct.toFixed(2)}%</b> above VWAP (${fmt(vwap)}) — intraday trend bullish`); }
+      else if(vwapGapPct < -0.05){ score -= 1; bearishFactors++; reasons.push(`Price is <b>${Math.abs(vwapGapPct).toFixed(2)}%</b> below VWAP (${fmt(vwap)}) — intraday trend bearish`); }
+      else{ reasons.push(`Price is right at VWAP (${fmt(vwap)}) — no clear intraday trend`); }
+    }
+
+    if(rsi !== null && rsi !== undefined){
+      if(rsi > 60){ score += 0.75; bullishFactors++; reasons.push(`15-min RSI is <b>${rsi.toFixed(1)}</b> (&gt;60) — bullish momentum`); }
+      else if(rsi < 40){ score -= 0.75; bearishFactors++; reasons.push(`15-min RSI is <b>${rsi.toFixed(1)}</b> (&lt;40) — bearish momentum`); }
+      else{ reasons.push(`15-min RSI is <b>${rsi.toFixed(1)}</b> — neutral zone`); }
+    }
+
+    if(volume_ratio !== null && volume_ratio !== undefined && volume_ratio > 1.5){
+      if(score > 0){ score += 0.5; bullishFactors++; reasons.push(`Volume is <b>${volume_ratio}x</b> the day's average — strong participation confirming the up-move`); }
+      else if(score < 0){ score -= 0.5; bearishFactors++; reasons.push(`Volume is <b>${volume_ratio}x</b> the day's average — strong participation confirming the down-move`); }
+      else{ reasons.push(`Volume is <b>${volume_ratio}x</b> the day's average — high activity, but no clear direction yet`); }
+    }
+  }else{
+    reasons.push(`VWAP / RSI / Volume not available yet (needs a few minutes of intraday data)`);
+  }
+
+  const now = new Date();
+  const totalMin = now.getHours() * 60 + now.getMinutes();
+  const isOpeningWindow = totalMin >= 9*60+15 && totalMin <= 9*60+30;
+  const isClosingWindow = totalMin >= 15*60 && totalMin <= 15*60+30;
+  if(isOpeningWindow || isClosingWindow){
+    reasons.push(`⚠️ ${isOpeningWindow ? 'Opening (9:15-9:30)' : 'Closing (3:00-3:30)'} window — signals are typically noisier here, weigh with extra caution`);
+  }
+
+  const nearStrikes = [...rows].sort((a,b) => Math.abs(a.strike_price-spot) - Math.abs(b.strike_price-spot)).slice(0,5);
+  let maxCe = {oi:0, strike:null}, maxPe = {oi:0, strike:null};
+  nearStrikes.forEach(r=>{
+    const ceOi = (r.call_options && r.call_options.market_data.oi) || 0;
+    const peOi = (r.put_options && r.put_options.market_data.oi) || 0;
+    if(ceOi > maxCe.oi) maxCe = {oi:ceOi, strike:r.strike_price};
+    if(peOi > maxPe.oi) maxPe = {oi:peOi, strike:r.strike_price};
+  });
+  if(maxCe.strike) reasons.push(`Nearest resistance wall (highest CE OI): <b>${fmt(maxCe.strike)}</b>`);
+  if(maxPe.strike) reasons.push(`Nearest support wall (highest PE OI): <b>${fmt(maxPe.strike)}</b>`);
+  lastWalls = { resistance: maxCe.strike, support: maxPe.strike };
+
+  const badge = document.getElementById('signalBadge');
+  const totalFactors = bullishFactors + bearishFactors;
+  const dominantFactors = Math.max(bullishFactors, bearishFactors);
+  const confidence = totalFactors ? Math.round((dominantFactors / totalFactors) * 100) : 0;
+
+  const conflict = momentumDir && buildupDir && momentumDir !== buildupDir;
+  if(conflict){
+    reasons.unshift(`🚫 Momentum and OI buildup disagree (momentum ${momentumDir}, buildup ${buildupDir}) — WAIT, low-quality setup`);
+  }
+
+  let rawLabel = 'NEUTRAL';
+  if(!conflict && score >= 2.5 && bullishFactors >= 3){ rawLabel = 'BUY CE BIAS'; }
+  else if(!conflict && score <= -2.5 && bearishFactors >= 3){ rawLabel = 'BUY PE BIAS'; }
+
+  let label = 'NEUTRAL', cls = 'neutral';
+  if(rawLabel !== 'NEUTRAL'){
+    if(pendingDirection === rawLabel){
+      label = rawLabel;
+      cls = rawLabel === 'BUY CE BIAS' ? 'bullish' : 'bearish';
+    }else{
+      label = 'NEUTRAL';
+      reasons.unshift(`⏳ ${rawLabel} candidate — needs to repeat on next refresh before confirming (reduces false starts)`);
+    }
+  }
+  pendingDirection = rawLabel;
+
+  badge.textContent = displayLabel(label);
+  badge.className = 'signal-badge ' + cls;
+
+  const confEl = document.getElementById('signalConfidence');
+  if(totalFactors){
+    confEl.textContent = `Confidence: ${confidence}% (${dominantFactors}/${totalFactors} factors agree)`;
+    confEl.style.display = 'block';
+  }else{
+    confEl.style.display = 'none';
+  }
+
+  document.getElementById('signalReasons').innerHTML = reasons.map(r => `<li>${r}</li>`).join('');
+
+  const changed = lastSignal && lastSignal.label !== label;
+  lastSignal = { label, cls, reasons, spot, atmStrike };
+  if(changed) playAlertSound();
+  if(document.getElementById('autoAlert').checked && label !== lastSentLabel){
+    sendSignalToTelegram(false);
+  }
+}
+
+async function fetchAtrAndRender(symbol){
+  const block = document.getElementById('atrTargets');
+  try{
+    const res = await fetch(`${BASE}/atr?symbol=${encodeURIComponent(symbol)}`);
+    const json = await res.json();
+    if(json.status !== 'success'){
+      block.style.display = 'none';
+      lastAtrTargets = null;
+      return;
+    }
+    const atr = json.atr;
+    const bias = lastSignal ? lastSignal.label : 'NEUTRAL';
+    const isPe = bias === 'BUY PE BIAS';
+    const isCe = bias === 'BUY CE BIAS';
+    const type = manualAtrType || (isPe ? 'PE' : 'CE');
+    const delta = Math.abs((type === 'PE' ? lastAtmData.atmPeDelta : lastAtmData.atmCeDelta) || 0.5);
+    const entry = (type === 'PE' ? lastAtmData.atmPeLtp : lastAtmData.atmCeLtp) || 0;
+
+    const slPts = atr * 0.5, t1Pts = atr * 1.0, t2Pts = atr * 1.75, t3Pts = atr * 2.75;
+    const sl = entry - slPts * delta;
+    const t1 = entry + t1Pts * delta;
+    const t2 = entry + t2Pts * delta;
+    const t3 = entry + t3Pts * delta;
+
+    lastAtrTargets = { sl, t1, t2, t3, entry, type, atr, delta };
+
+    const autoNote = !manualAtrType && !isCe && !isPe ? ' <span style="color:var(--muted);font-weight:400;">(WAIT — no clear bias, CE shown as default)</span>' : '';
+    block.style.display = 'block';
+    block.innerHTML = `
+      <div class="atr-title">ATR(14) Targets — ATM ${type} · live LTP ₹${fmt(entry)}${autoNote}</div>
+      <div class="atr-type-toggle">
+        <button class="${manualAtrType==='CE' ? 'active' : ''}" onclick="setManualAtrType('CE')">CE</button>
+        <button class="${manualAtrType==='PE' ? 'active' : ''}" onclick="setManualAtrType('PE')">PE</button>
+        ${manualAtrType ? '<button onclick="setManualAtrType(null)">Auto</button>' : ''}
+      </div>
+      <div class="atr-row"><span>Daily ATR</span><b>${fmt(atr)} pts</b></div>
+      <div class="atr-row"><span>SL (0.5×ATR, δ${delta.toFixed(2)})</span><b style="color:var(--coral)">₹${fmt(sl)}</b></div>
+      <div class="atr-row"><span>Target 1 (1.0×ATR)</span><b style="color:var(--teal)">₹${fmt(t1)}</b></div>
+      <div class="atr-row"><span>Target 2 (1.75×ATR)</span><b style="color:var(--teal)">₹${fmt(t2)}</b></div>
+      <div class="atr-row"><span>Target 3 (2.75×ATR)</span><b style="color:var(--teal)">₹${fmt(t3)}</b></div>
+    `;
+  }catch(e){
+    block.style.display = 'none';
+    lastAtrTargets = null;
+  }
+}
+
+function setManualAtrType(type){
+  manualAtrType = type;
+  const symbol = document.getElementById('symbolSelect').value;
+  fetchAtrAndRender(symbol);
+  fetchAtr15AndRender(symbol);
+}
+
+async function fetchAtr15AndRender(symbol){
+  const block = document.getElementById('atr15Targets');
+  try{
+    const res = await fetch(`${BASE}/atr15?symbol=${encodeURIComponent(symbol)}`);
+    const json = await res.json();
+    if(json.status !== 'success'){
+      block.style.display = 'none';
+      lastAtr15Targets = null;
+      return;
+    }
+    const atr = json.atr;
+    const bias = lastSignal ? lastSignal.label : 'NEUTRAL';
+    const isPe = bias === 'BUY PE BIAS';
+    const isCe = bias === 'BUY CE BIAS';
+    const type = manualAtrType || (isPe ? 'PE' : 'CE');
+    const delta = Math.abs((type === 'PE' ? lastAtmData.atmPeDelta : lastAtmData.atmCeDelta) || 0.5);
+    const entry = (type === 'PE' ? lastAtmData.atmPeLtp : lastAtmData.atmCeLtp) || 0;
+
+    const slPts = atr * 0.5, t1Pts = atr * 1.0, t2Pts = atr * 1.75, t3Pts = atr * 2.75;
+    const sl = entry - slPts * delta;
+    const t1 = entry + t1Pts * delta;
+    const t2 = entry + t2Pts * delta;
+    const t3 = entry + t3Pts * delta;
+
+    lastAtr15Targets = { sl, t1, t2, t3, entry, type, atr, delta };
+
+    const autoNote = !manualAtrType && !isCe && !isPe ? ' <span style="color:var(--muted);font-weight:400;">(WAIT — no clear bias, CE shown as default)</span>' : '';
+    block.style.display = 'block';
+    block.innerHTML = `
+      <div class="atr-title">15-Min ATR(14) Scalp Targets — ATM ${type} · live LTP ₹${fmt(entry)}${autoNote}</div>
+      <div class="atr-row"><span>15-Min ATR</span><b>${fmt(atr)} pts</b></div>
+      <div class="atr-row"><span>SL (0.5×ATR, δ${delta.toFixed(2)})</span><b style="color:var(--coral)">₹${fmt(sl)}</b></div>
+      <div class="atr-row"><span>Target 1 (1.0×ATR)</span><b style="color:var(--teal)">₹${fmt(t1)}</b></div>
+      <div class="atr-row"><span>Target 2 (1.75×ATR)</span><b style="color:var(--teal)">₹${fmt(t2)}</b></div>
+      <div class="atr-row"><span>Target 3 (2.75×ATR)</span><b style="color:var(--teal)">₹${fmt(t3)}</b></div>
+    `;
+  }catch(e){
+    block.style.display = 'none';
+    lastAtr15Targets = null;
+  }
+}
+
+function calcPositionSize(){
+  const resultEl = document.getElementById('sizingResult');
+  const use15 = document.getElementById('use15minSizing').checked;
+  const targets = use15 ? lastAtr15Targets : lastAtrTargets;
+  if(!targets){
+    resultEl.textContent = use15 ? 'Load the option chain and wait for 15-min ATR to load (needs ~30+ min of market data)' : 'Load the option chain first to get ATR-based SL for sizing';
+    return;
+  }
+  const capital = Number(document.getElementById('ps_capital').value) || 0;
+  const riskPct = Number(document.getElementById('ps_risk').value) || 0;
+  const lotSize = Number(document.getElementById('ps_lotsize').value) || 0;
+  if(!capital || !riskPct || !lotSize){
+    resultEl.textContent = 'Fill capital, risk % and lot size';
+    return;
+  }
+  const slDistance = targets.entry - targets.sl;
+  if(slDistance <= 0){
+    resultEl.textContent = 'SL distance invalid — try reloading the chain';
+    return;
+  }
+  const riskAmount = capital * riskPct / 100;
+  const riskPerLot = slDistance * lotSize;
+  const lots = Math.floor(riskAmount / riskPerLot);
+  const qty = lots * lotSize;
+  const actualRisk = lots * riskPerLot;
+
+  if(lots <= 0){
+    resultEl.innerHTML = `SL distance (₹${fmt(slDistance)}) too wide for this risk budget at 1 lot. Increase capital/risk% or wait for a tighter setup.`;
+    return;
+  }
+  resultEl.innerHTML = `${use15 ? '[15-min] ' : '[Daily] '}Rec. Size: <b>${lots} lot(s)</b> (${qty} qty) · Max Risk: <b>₹${fmt(actualRisk)}</b> (${((actualRisk/capital)*100).toFixed(2)}% capital)`;
+}
+
+function buildSignalMessage(){
+  if(!lastSignal) return null;
+  const { label, spot, atmStrike, reasons } = lastSignal;
+  const symbol = document.getElementById('symbolSelect').selectedOptions[0].textContent;
+  const expiry = document.getElementById('expiryInput').value;
+  const lines = [
+    `<b>${symbol} — ${displayLabel(label)}</b>`,
+    `Spot: ${fmt(spot)} | ATM: ${fmt(atmStrike)} | Expiry: ${expiry}`,
+    '',
+    ...reasons.map(r => '• ' + r.replace(/<\/?b>/g,'')),
+  ];
+  if(lastAtrTargets){
+    const t = lastAtrTargets;
+    lines.push('', `<b>Daily ATR Targets (${t.type}, δ${t.delta.toFixed(2)})</b>`);
+    lines.push(`Entry ~₹${fmt(t.entry)} | SL ₹${fmt(t.sl)} | T1 ₹${fmt(t.t1)} | T2 ₹${fmt(t.t2)} | T3 ₹${fmt(t.t3)}`);
+  }
+  if(lastAtr15Targets){
+    const t = lastAtr15Targets;
+    lines.push('', `<b>15-Min Scalp Targets (${t.type}, δ${t.delta.toFixed(2)})</b>`);
+    lines.push(`Entry ~₹${fmt(t.entry)} | SL ₹${fmt(t.sl)} | T1 ₹${fmt(t.t1)} | T2 ₹${fmt(t.t2)} | T3 ₹${fmt(t.t3)}`);
+  }
+  lines.push('', '<i>Rule-based filter, not a trade call. Confirm with chart &amp; price action.</i>');
+  return lines.join('\n');
+}
+
+async function sendSignalToTelegram(manual){
+  const msg = buildSignalMessage();
+  const statusEl = document.getElementById('tgStatus');
+  if(!msg){
+    statusEl.textContent = 'Load the option chain first';
+    statusEl.className = 'tg-status err';
+    return;
+  }
+  try{
+    const res = await fetch(`${BASE}/send-signal`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg })
+    });
+    const json = await res.json();
+    if(json.ok){
+      statusEl.textContent = manual ? '✓ Sent to Telegram' : `✓ Auto-alert sent (${displayLabel(lastSignal.label)})`;
+      statusEl.className = 'tg-status ok';
+      lastSentLabel = lastSignal.label;
+    }else{
+      statusEl.textContent = '✗ ' + (json.reason || 'Failed to send');
+      statusEl.className = 'tg-status err';
+    }
+  }catch(e){
+    statusEl.textContent = '✗ Could not reach local server';
+    statusEl.className = 'tg-status err';
+  }
+}
+
+let livePnlPrices = {};
+
+function calcTradePnl(t){
+  if(t.exit !== null && t.exit !== undefined && t.exit !== ''){
+    return { pnl: (Number(t.exit) - Number(t.entry)) * Number(t.qty), live: false };
+  }
+  if(t.instrument_key && livePnlPrices[t.instrument_key] !== undefined){
+    const ltp = livePnlPrices[t.instrument_key];
+    return { pnl: (ltp - Number(t.entry)) * Number(t.qty), live: true, ltp };
+  }
+  return null;
+}
+
+async function buyOption(instrumentKey, symbolLabel, strike, type, ltp){
+  const maxPos = Number(document.getElementById('maxOpenPositions').value) || 0;
+  if(maxPos && lastOpenTradesCount >= maxPos){
+    alert(`Max open positions limit reached (${maxPos}). Close a position before adding a new one.`);
+    return;
+  }
+  const qty = prompt(`Paper BUY ${symbolLabel} ${strike} ${type} @ ${ltp}\nEnter quantity (lot size):`, '');
+  if(!qty || isNaN(qty) || Number(qty) <= 0) return;
+  const trailInput = prompt(`Enable trailing SL? Enter trail % (e.g. 20 = SL trails 20% below the highest price seen).\nLeave blank to skip.`, '');
+  const trailPct = (trailInput && !isNaN(trailInput) && Number(trailInput) > 0) ? Number(trailInput) : null;
+  const trade = {
+    symbol: symbolLabel.trim(),
+    type: type,
+    strike: strike,
+    qty: qty,
+    entry: ltp,
+    exit: null,
+    instrument_key: instrumentKey,
+    date: new Date().toISOString(),
+    trail_pct: trailPct,
+    peak: trailPct ? Number(ltp) : null,
+    sl: null
+  };
+  try{
+    await fetch(`${BASE}/trades`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(trade)
+    });
+    loadTrades();
+  }catch(e){
+    alert('Could not reach local server');
+  }
+}
+
+async function closeTrade(id, instrumentKey){
+  const ltp = livePnlPrices[instrumentKey];
+  if(ltp === undefined){ alert('Live price not available yet — try again in a few seconds'); return; }
+  try{
+    await fetch(`${BASE}/trades/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ exit: ltp })
+    });
+    loadTrades();
+  }catch(e){
+    alert('Could not reach local server');
+  }
+}
+
+async function refreshLivePnl(trades){
+  const keys = [...new Set(trades.filter(t => (!t.exit) && t.instrument_key).map(t => t.instrument_key))];
+  if(!keys.length) return;
+  try{
+    const res = await fetch(`${BASE}/option-quote?instrument_keys=${encodeURIComponent(keys.join(','))}`);
+    const json = await res.json();
+    if(json.status === 'success' && json.data){
+      Object.values(json.data).forEach(d => {
+        if(d.instrument_token) livePnlPrices[d.instrument_token] = d.last_price;
+      });
+    }
+  }catch(e){ }
+}
+
+async function checkTrailingStops(trades){
+  const openTrailing = trades.filter(t => !t.exit && t.instrument_key && t.trail_pct && livePnlPrices[t.instrument_key] !== undefined);
+  for(const t of openTrailing){
+    const ltp = livePnlPrices[t.instrument_key];
+    const newPeak = Math.max(t.peak || t.entry, ltp);
+    const trailSl = newPeak * (1 - t.trail_pct / 100);
+    const newSl = Math.max(t.sl || 0, trailSl);
+
+    if(ltp <= newSl && newSl > 0){
+      try{
+        await fetch(`${BASE}/trades/${t.id}`, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ exit: ltp, peak: newPeak, sl: newSl })
+        });
+        playAlertSound();
+        if(document.getElementById('autoAlert').checked){
+          fetch(`${BASE}/send-signal`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ message: `🛑 <b>Trailing SL hit — ${t.symbol} ${t.strike || ''} ${t.type}</b>\nClosed @ ₹${fmt(ltp)} (peak was ₹${fmt(newPeak)})` })
+          }).catch(()=>{});
+        }
+      }catch(e){}
+    }else if(newPeak !== t.peak || newSl !== t.sl){
+      t.peak = newPeak; t.sl = newSl;
+      try{
+        await fetch(`${BASE}/trades/${t.id}`, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ peak: newPeak, sl: newSl })
+        });
+      }catch(e){}
+    }
+  }
+}
+
+async function loadTrades(){
+  try{
+    const res = await fetch(`${BASE}/trades`);
+    const trades = await res.json();
+    await refreshLivePnl(trades);
+    await checkTrailingStops(trades);
+    renderTrades(trades);
+  }catch(e){
+    document.getElementById('tradeList').innerHTML = '<div class="empty">Could not reach local server</div>';
+  }
+}
+
+function renderStats(trades){
+  const closed = trades.filter(t => t.exit !== null && t.exit !== undefined && t.exit !== '');
+  const strip = document.getElementById('statsStrip');
+  if(!closed.length){
+    strip.innerHTML = `
+      <div class="stats-cell"><div class="stats-label">Trades</div><div class="stats-val">0</div></div>
+      <div class="stats-cell"><div class="stats-label">Win Rate</div><div class="stats-val">—</div></div>
+      <div class="stats-cell"><div class="stats-label">Avg P&L</div><div class="stats-val">—</div></div>
+    `;
+    return;
+  }
+  const pnls = closed.map(t => (Number(t.exit) - Number(t.entry)) * Number(t.qty));
+  const wins = pnls.filter(p => p > 0);
+  const winRate = (wins.length / pnls.length * 100).toFixed(0);
+  const avgPnl = pnls.reduce((a,b) => a+b, 0) / pnls.length;
+  const avgColor = avgPnl >= 0 ? 'var(--teal)' : 'var(--coral)';
+  strip.innerHTML = `
+    <div class="stats-cell"><div class="stats-label">Trades</div><div class="stats-val">${closed.length}</div></div>
+    <div class="stats-cell"><div class="stats-label">Win Rate</div><div class="stats-val">${winRate}%</div></div>
+    <div class="stats-cell"><div class="stats-label">Avg P&L</div><div class="stats-val" style="color:${avgColor}">${avgPnl >= 0 ? '+' : ''}${fmt(avgPnl)}</div></div>
+  `;
+}
+
+function checkDailyLossLimit(trades){
+  const today = new Date().toISOString().slice(0,10);
+  if(today !== lastAlertDate){ lastAlertDate = today; dailyLimitAlertSent = false; }
+
+  const limit = Number(document.getElementById('dailyLossLimit').value) || 0;
+  const warningEl = document.getElementById('lossWarning');
+  if(!limit){ warningEl.classList.remove('show'); return; }
+
+  const todaysClosed = trades.filter(t => {
+    if(!t.exit || !t.date) return false;
+    return t.date.slice(0,10) === today;
+  });
+  const todaysPnl = todaysClosed.reduce((sum, t) => sum + (Number(t.exit) - Number(t.entry)) * Number(t.qty), 0);
+
+  if(todaysPnl < 0 && Math.abs(todaysPnl) >= limit){
+    warningEl.textContent = `⚠️ Daily loss limit reached — today's realized loss is ₹${fmt(Math.abs(todaysPnl))} (limit ₹${fmt(limit)}). Consider stopping for today.`;
+    warningEl.classList.add('show');
+    if(!dailyLimitAlertSent){
+      dailyLimitAlertSent = true;
+      playAlertSound();
+      fetch(`${BASE}/send-signal`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ message: `⚠️ <b>Daily loss limit reached</b>\nToday's realized loss: ₹${fmt(Math.abs(todaysPnl))} (limit ₹${fmt(limit)})` })
+      }).catch(()=>{});
+    }
+  }else{
+    warningEl.classList.remove('show');
+  }
+}
+
+function renderTrades(trades){
+  const list = document.getElementById('tradeList');
+  const pnlEl = document.getElementById('journalPnl');
+
+  renderStats(trades);
+  checkDailyLossLimit(trades);
+  lastOpenTradesCount = trades.filter(t => !t.exit).length;
+
+  if(!trades.length){
+    list.innerHTML = '<div class="empty">No trades logged yet</div>';
+    pnlEl.textContent = '—';
+    return;
+  }
+
+  let totalPnl = 0, openCount = 0;
+  let html = '';
+  trades.forEach(t => {
+    const result = calcTradePnl(t);
+    const pnl = result ? result.pnl : null;
+    if(pnl === null) openCount++; else totalPnl += pnl;
+    const pnlColor = pnl === null ? 'var(--muted)' : (pnl >= 0 ? 'var(--teal)' : 'var(--coral)');
+    const pnlText = pnl === null ? 'OPEN' : (pnl >= 0 ? '+' : '') + fmt(pnl);
+    const liveTag = result && result.live ? '<span class="live-tag">LIVE</span>' : '';
+    const trailTag = (!t.exit && t.trail_pct) ? `<span class="live-tag" style="background:rgba(232,163,61,0.2);color:var(--amber);">TRAIL ${t.trail_pct}%</span>` : '';
+    const trailInfo = (!t.exit && t.trail_pct && t.sl) ? `<div class="trade-meta">Peak ₹${fmt(t.peak)} · Trailing SL ₹${fmt(t.sl)}</div>` : '';
+    const closeBtn = (!t.exit && t.instrument_key) ? `<button class="close-btn" onclick="closeTrade('${t.id}','${t.instrument_key}')">Close</button>` : '';
+    html += `<div class="trade-row">
+      <div class="trade-main">
+        <div>${t.symbol} ${t.strike ? fmt(t.strike) : ''} ${t.type} ${liveTag}${trailTag}</div>
+        <div class="trade-meta">${t.date ? formatTradeTime(t.date) + ' · ' : ''}Entry ${fmt(t.entry)}${t.exit ? ' → Exit ' + fmt(t.exit) : (result && result.live ? ' → LTP ' + fmt(result.ltp) : '')} · Qty ${fmt(t.qty)}</div>
+        ${trailInfo}
+      </div>
+      <div class="trade-pnl" style="color:${pnlColor}">${pnlText}</div>
+      ${closeBtn}
+      <button class="trade-del" onclick="deleteTrade('${t.id}')">✕</button>
+    </div>`;
+  });
+  list.innerHTML = html;
+
+  const pnlColor = totalPnl >= 0 ? 'var(--teal)' : 'var(--coral)';
+  pnlEl.innerHTML = `<span style="color:${pnlColor}">${totalPnl >= 0 ? '+' : ''}${fmt(totalPnl)}</span>` + (openCount ? ` <span style="color:var(--muted);font-weight:400;">(${openCount} open)</span>` : '');
+}
+
+async function submitTrade(e){
+  e.preventDefault();
+  const exitVal = document.getElementById('tf_exit').value || null;
+  const maxPos = Number(document.getElementById('maxOpenPositions').value) || 0;
+  if(!exitVal && maxPos && lastOpenTradesCount >= maxPos){
+    alert(`Max open positions limit reached (${maxPos}). Close a position before adding a new one.`);
+    return false;
+  }
+  const trade = {
+    symbol: document.getElementById('tf_symbol').value.trim().toUpperCase(),
+    type: document.getElementById('tf_type').value,
+    strike: document.getElementById('tf_strike').value || null,
+    qty: document.getElementById('tf_qty').value,
+    entry: document.getElementById('tf_entry').value,
+    exit: exitVal,
+    date: new Date().toISOString()
+  };
+  try{
+    await fetch(`${BASE}/trades`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(trade)
+    });
+    document.getElementById('tradeForm').reset();
+    loadTrades();
+  }catch(e){
+    alert('Could not reach local server');
+  }
+  return false;
+}
+
+async function deleteTrade(id){
+  try{
+    await fetch(`${BASE}/trades/${id}`, { method: 'DELETE' });
+    loadTrades();
+  }catch(e){
+    alert('Could not reach local server');
+  }
+}
+
+document.getElementById('expiryInput').value = nearestExpiry();
+refreshTicker();
+loadTrades();
+loadWatchlist();
+fetchBtcQuote();
+setInterval(loadTrades, 5000);
+setInterval(refreshTicker, 5000);
+setInterval(fetchBtcQuote, 20000);
+</script>
+</body>
+</html>
